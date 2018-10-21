@@ -21,7 +21,7 @@
 
 include $(top_srcdir)/Makefile.common
 
-DESTDIR := 
+DESTDIR :=
 
 # AM_CPPFLAGS = $(STD_DEFINES_AND_INCLUDES)
 # AM_CXXFLAGS = -Wall -ldl -pthread
@@ -50,7 +50,7 @@ ourlibs = \
 	$(ORTP_LIBS)
 
 OpenBTS_SOURCES = OpenBTS.cpp GetConfigurationKeys.cpp
-OpenBTS_LDADD = $(ourlibs) -ldl -lortp -la53 -lcoredumper 
+OpenBTS_LDADD = $(ourlibs) -ldl -lortp -la53 -lcoredumper
 OpenBTS_LDFLAGS = $(GPROF_OPTIONS) -rdynamic
 
 clilibs= \
@@ -75,7 +75,12 @@ EXTRA_DIST = \
 	generateConfigTable.sh \
 	exportConfigTable.sh \
 	importConfigTable.sh \
-	generateTeX.sh
+	generateTeX.sh \
+	asterisk.service \
+	openbts.service \
+	sipauthserve.service \
+	smqueue.service
+
 
 install: OpenBTS OpenBTSCLI
 	mkdir -p "$(DESTDIR)/OpenBTS/"
@@ -96,4 +101,9 @@ install: OpenBTS OpenBTSCLI
 	mkdir -p "$(DESTDIR)/home/openbts/"
 	install CLI "$(DESTDIR)/home/openbts/"
 	install openbtsconfig "$(DESTDIR)/home/openbts/"
+	mkdir -p "$(DESTDIR)/etc/systemd/system/"
+	install asterisk.serice "$(DESTDIR)/etc/systemd/system/"
+	install openbts.serice "$(DESTDIR)/etc/systemd/system/"
+	install sipauthserve.serice "$(DESTDIR)/etc/systemd/system/"
+	install smqueue.serice "$(DESTDIR)/etc/systemd/system/"
 

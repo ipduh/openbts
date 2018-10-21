@@ -48,6 +48,9 @@ sqlite3 /etc/OpenBTS/OpenBTS.db ".read /etc/OpenBTS/OpenBTS.example.sql" > /dev/
 
 chown openbts:openbts /home/openbts/openbtsconfig
 
+echo $DATE >> /etc/OpenBTS/installed
+systemctl daemon-reload
+
 }
 
 case "$1" in
