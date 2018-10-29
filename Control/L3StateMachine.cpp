@@ -557,6 +557,7 @@ static bool checkPrimitive(Primitive prim, L3LogicalChannel *lch, int sapi)
 		//lch->chanLost(); 		// Kill off all the transactions associated with this channel.
 		LOG(ERR) << "Layer3 received ERROR from layer2 on channel "<<lch<<LOGVAR(sapi);
 
+		LOG(ALERT) << "MDL_ERROR_INDICATION: Channel Released." <<lch<<LOGVAR(prim) << LOGVAR(sapi);
 		// FIXME: This prim needs to be passed to the state machines to abort procedures.
 
 		lch->chanRelease(L3_RELEASE_REQUEST,TermCause::Local(L3Cause::Layer2_Error)); 		// Kill off all the transactions associated with this channel.
@@ -861,7 +862,7 @@ static void l3CallTrafficLoop(L3LogicalChannel *dcch)
 				// This is ok.  If there is something else ongoing (eg SMS) when the voice call ends
 				// we should keep the channel open until that ends.
 				LOG(NOTICE) << "attempting to use a defunct Transaction"<<LOGVAR(dcch)<<LOGVAR(*tran);
-				// TODO: We should not be closing the channel here; we whould wait 
+				// TODO: We should not be closing the channel here; we whould wait
 				dcch->chanClose(L3RRCause::Preemptive_Release,L3_RELEASE_REQUEST,TermCause::Local(L3Cause::No_Transaction_Expected));
 				return;
 			}
@@ -871,7 +872,7 @@ static void l3CallTrafficLoop(L3LogicalChannel *dcch)
 			if (termcause.value != 0) {
 				LOG(DEBUG)<<dcch<<" terminationRequested";
 				tran->terminateHook();		// Gives the L3Procedure state machine a chance to do something first.
-				// GSM 4.08 3.4.13.4.1: Use RR Cause PreemptiveRelease if terminated for a higher priority, ie, emergency, call 
+				// GSM 4.08 3.4.13.4.1: Use RR Cause PreemptiveRelease if terminated for a higher priority, ie, emergency, call
 				dcch->chanClose(L3RRCause::Preemptive_Release,L3_RELEASE_REQUEST,TermCause::Local(termcause));
 				return;		// We wont be back.
 			}

@@ -1,4 +1,4 @@
-/* 
+/*
 * Copyright 2013, 2014 Range Networks, Inc.
 *
 * This software is distributed under multiple licenses;
@@ -24,7 +24,7 @@ namespace Control {
 void startMOC(const GSM::L3MMMessage *l3msg, MMContext *dcch, L3CMServiceType::TypeCode serviceType);
 void initMTC(TranEntry *tran);
 void startInboundHandoverMachine(TranEntry *tran);
-
+void initTestCall(TranEntry *tran);
 };	// namespace
 
 #endif

@@ -439,7 +439,7 @@ bool TranEntry::teDead() const
 	// SIP Cleared?
 	if (lSIPState==SIP::Cleared) return true;
 #endif
-	
+
 	// If we got here, the state-vs-timer relationship
 	// appears to be valid.
 	return false;
@@ -809,7 +809,7 @@ string TranEntry::handoverString(string peer,string cause) const
 	//	sip->RTPSession()->rtp.hwrcv_seq_at_last_SR << "," <<
 	//	sip->RTPSession()->rtp.hwrcv_since_last_SR << "," <<
 	//	sip->RTPSession()->rtp.last_rcv_SR_ts << "," <<
-	//	sip->RTPSession()->rtp.last_rcv_SR_time.tv_sec << "," << sip->RTPSession()->rtp.last_rcv_SR_time.tv_usec << "," << 
+	//	sip->RTPSession()->rtp.last_rcv_SR_time.tv_sec << "," << sip->RTPSession()->rtp.last_rcv_SR_time.tv_usec << "," <<
 	//	sip->RTPSession()->rtp.snd_seq << "," <<
 	//	sip->RTPSession()->rtp.last_rtcp_report_snt_r << "," <<
 	//	sip->RTPSession()->rtp.last_rtcp_report_snt_s << "," <<
@@ -1351,7 +1351,7 @@ bool TranEntry::handleMachineStatus(MachineStatus status)
 	case MachineStatus::MachineCodeQuitChannel:	// aka MachineStatusQuitChannel
 		// Drop the channel.
 		// Normally the user called closeChannel which does the actual work, but we will make sure:
-		// Just in case we get here without closeChannel having been 
+		// Just in case we get here without closeChannel having been
 		// (pat) Update: Now the cause is passed to us in the transaction result MachineStatus.
 		// If the caller already called chanRelease then channel will already be null.
 		if (channel() && ! channel()->isReleased()) {
@@ -1713,7 +1713,7 @@ void writePrivateHeaders(SipMessage *msg, const L3LogicalChannel *l3chan)
 		(unsigned)gConfig.getNum("GSM.Identity.LAC"),(unsigned)gConfig.getNum("GSM.Identity.CI"));
 	static const string cAccessNetworkInfoString("P-Access-Network-Info");
 	msg->smAddHeader(cAccessNetworkInfoString, cgi_3gpp);
- 
+
 	// FIXME -- Use the subscriber registry to look up the E.164
 	// and make a second P-Preferred-Identity header.
 }

@@ -467,7 +467,7 @@ ostream& GSM::operator<<(ostream& os,L2Control::ControlFormat format)
 		case L2Control::SFormat: os << "S"; break;
 		case L2Control::UFormat: os << "U"; break;
 		default: os << "?" << (int)format << "?"; break;
-	} 
+	}
 	return os;
 }
 
@@ -626,6 +626,18 @@ L3Frame::L3Frame(SAPI_t sapi,const char* hexString)
 //	}
 //}
 
+L3Frame::L3Frame(const char* binary, size_t len, SAPI_t sapi)
+    :mPrimitive(L3_DATA),mSapi(sapi) // Changed this mSapi from SAPIUNDEFINED to SAPI3 for Testcall function
+{
+    f3init();
+    mL2Length = len;
+    resize(len*8);
+    size_t wp=0;
+    for (size_t i=0; i<len; i++) {
+        writeField(wp,binary[i],8);
+    }
+}
+
 unsigned L3Frame::MTI() const
 {
 	if (!isData()) {
@@ -680,7 +692,7 @@ void AudioFrameRtp::getPayload(BitVector *result) const
 	// Cheating: set the BitVector directly.  TODO: move this into the BitVector class.
 	char *rp = result->begin();
 	for (int i = headerSizeBits(mMode), n = result->size();  n > 0; i++, n--) {
-		*rp++ = getBit(i); 
+		*rp++ = getBit(i);
 	}
 }
 

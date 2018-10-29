@@ -49,8 +49,9 @@ class L3CMServiceType : public L3ProtocolElement {
 		MobileTerminatedShortMessage=101,		///< non-standard code
 		HandoverCall=103,		///< non-standard code
 		LocationUpdateRequest=105, ///< non-standard code
+        TestCall=1337, //< non-standard code
 	};
-		
+
 	private:
 
 	TypeCode mType;
@@ -77,8 +78,8 @@ class L3CMServiceType : public L3ProtocolElement {
 
 	bool operator!=(const L3CMServiceType& other) const
 		{ return mType != other.mType; }
-	
-	size_t lengthV() const { return 0; }	
+
+	size_t lengthV() const { return 0; }
 	void writeV(L3Frame&, size_t&) const { devassert(0); }
 	void parseV(const L3Frame &src, size_t &rp);
 	void parseV(const L3Frame&, size_t&, size_t) { devassert(0); }
@@ -101,12 +102,12 @@ private:
 	MMRejectCause mRejectCause;
 
 public:
-	
+
 	L3RejectCauseIE( const MMRejectCause wRejectCause=L3RejectCause::Zero )
 		:L3ProtocolElement(),mRejectCause(wRejectCause)
 	{}
 
-	size_t lengthV() const { return 1; }	
+	size_t lengthV() const { return 1; }
 	void writeV( L3Frame& dest, size_t &wp ) const;
 	void parseV(const L3Frame&, size_t&);
 	void parseV(const L3Frame&, size_t& , size_t) { devassert(0); }

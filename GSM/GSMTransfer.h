@@ -182,7 +182,7 @@ class TxBurst : public BitVector {
 	void Hl(bool HlVal) { mData[gHlIndex] = HlVal; }
 
 	friend std::ostream& operator<<(std::ostream& os, const TxBurst& ts);
-	
+
 };
 
 
@@ -242,7 +242,7 @@ class RxBurst : public SoftVector {
 	Time time() const { return mTime; }
 
 	void time(const Time& wTime) { mTime = wTime; }
-	
+
 	float RSSI() const { return mRSSI; }
 
 	float timingError() const { return mTimingError; }
@@ -418,7 +418,7 @@ class L2Length {
 	unsigned mM;			///< more data flag ("1" indicates segmentation)
 
 
-	public: 
+	public:
 
 	L2Length(unsigned wL=0, bool wM=0)
 		:mL(wL),mM(wM)
@@ -604,7 +604,7 @@ class L2Frame : public BitVector {
 
 	/** Look into the LAPDm header and get the control format.  */
 	L2Control::ControlFormat controlFormat() const;
-	
+
 	/** Look into the LAPDm header and decode the U-frame type. */
 	L2Control::FrameType UFrameType() const;
 
@@ -613,7 +613,7 @@ class L2Frame : public BitVector {
 
 	/** Look into the LAPDm header and get the P/F bit. */
 	bool PF() const { return mStart[8+3] & 0x01; }
-	
+
 	/** Set/clear the PF bit. */
 	void PF(bool wPF) { mStart[8+3]=wPF; }
 
@@ -637,7 +637,7 @@ class L2Frame : public BitVector {
 
 	/** Return the CR bit, GSM 04.06 3.3.2.  Assumes A or B header. */
 	bool CR() const { return mStart[6] & 0x01; }
-	
+
 	/** Set/clear the CR bit. */
 	void CR(bool wCR) { mStart[6]=wCR; }
 
@@ -757,6 +757,8 @@ class L3Frame : public BitVector {		// (pat) This is in Layer3, common to UMTS a
 	// pat removed 9-8-2014 because it is unused.  If you put it back in, add an explicit SAPI argument to make sure it is distguished
 	// from the other constructors.
 	//explicit L3Frame(const char*, size_t len);
+    explicit L3Frame(const char*, size_t len, SAPI_t sapi);
+
 
 	/** Protocol Discriminator, GSM 04.08 10.2. */
 	L3PD PD() const { return (L3PD)peekField(4,4); }

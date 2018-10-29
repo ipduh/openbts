@@ -71,6 +71,7 @@ class MMUser : public MemCheckMMUser /*: public RefCntBase*/ {
 	typedef PtrList<TranEntry> MMUQueue_t;
 	MMUQueue_t mmuMTCq;
 	MMUQueue_t mmuMTSMSq;
+  MMUQueue_t mmuTESTCALL;
 	friend class MMLayer;
 	MMState mmuState;
 	MMContext* mmuContext;
@@ -146,6 +147,7 @@ class MMContext : public MemCheckMMContext /*: public RefCntBase*/ {
 		TE_MOSMS2,		// The follow-on MO-SMS.
 		TE_MTSMS,		// Only one MT-SMS allowed at a time.
 		TE_SS,			// Dedicated supplementary services transaction.
+    TE_TCall,   // TestCall
 		TE_num			// Not a Transaction; The max number of entries in this table.
 	};
 	RefCntPointer<TranEntry> mmcTE[TE_num];
@@ -202,7 +204,7 @@ class MMLayer {
 	// Once the MMUser is 'attached' it cannot be deleted except by the the L3LogicalChannel thread,
 	// so the MMUser can also be used by that thread without fear of destruction during use.
 	// But MMUsers are created by an external thread (specifically, from SIPInterface) and may
-	// be destroyed as a result of expired pages, so this global Mutex is used to 
+	// be destroyed as a result of expired pages, so this global Mutex is used to
 	// to add/remove MMUsers, to search for MMUsers, paging,
 	// to connect/disconnect an MMUser with/from a MMContext.
 	// It is also used to create/delete MMContexts which is probably unnecessary.

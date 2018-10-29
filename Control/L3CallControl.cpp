@@ -1,4 +1,4 @@
-/* 
+/*
 * Copyright 2013, 2014 Range Networks, Inc.
 *
 * This software is distributed under multiple licenses;
@@ -31,6 +31,7 @@
 #include <GSMLogicalChannel.h>
 #include <GSML3SSMessages.h>
 #include <CLI.h>
+#include <iostream>
 
 
 namespace Control {
@@ -89,7 +90,7 @@ class AssignTCHMachine : public CCBase {
 	void sendReassignment();
 	// The reassignment timer is how long we try to send reassignments; it should not abort the transaction
 	// immediately when it expires or it might abort a successful reassignment, so this timer must not be in the L3TimerId list.
-	// 
+	//
 	Timeval TChReassignment;
 	protected:
 
@@ -143,6 +144,17 @@ class InCallMachine : public CCBase {
 	const char *debugName() const { return "InCallMachine"; }
 };
 
+class TestCallMachine : public CCBase {
+  enum State {
+    stateStart,
+  };
+  public:
+  MachineStatus machineRunState(int state, const GSM::L3Message* l3msg, const SIP::DialogMessage *sipmsg);
+  void testCallStart(TranEntry *tran);
+  TestCallMachine(TranEntry *wTran) : CCBase(wTran) {}
+  const char *debugName() const { return "TestCallMachine"; }
+};
+
 // MOCMachine: Mobile Originated Call State Machine
 // GSM 4.08 5.2.1 Mobile originating call establishment.
 // On entry phone has an RR connection but is trying to get the CM connection established.
@@ -160,7 +172,7 @@ void startMOC(const GSM::L3MMMessage *l3msg, MMContext *dcch, CMServiceTypeCode 
 }
 
 #if UNUSED
-//MachineStatus ProcedureDetach::machineRunState(int state, const GSM::L3Message* l3msg, const SIP::DialogMessage *sipmsg) 
+//MachineStatus ProcedureDetach::machineRunState(int state, const GSM::L3Message* l3msg, const SIP::DialogMessage *sipmsg)
 //{
 //	PROCLOG2(DEBUG,state)<<LOGVAR(l3msg)<<LOGVAR(sipmsg)<<LOGVAR2("imsi",tran()->subscriber());
 //	getDialog()->dialogCancel();  // reudundant, chanLost would do it.  Does nothing if dialog not yet started.
@@ -457,7 +469,7 @@ MachineStatus MOCMachine::handleSetupMsg(const L3Setup *setup)
 	// (pat) TODO: I dont think this is right - supposed to wait for SIP proceeding before sending this.
 	PROCLOG(INFO) << "Sending Call Proceeding, transaction:" <<tran();
 	channel()->l3sendm(GSM::L3CallProceeding(getL3TI()));
-	setGSMState(CCState::MOCProceeding); 
+	setGSMState(CCState::MOCProceeding);
 	return MachineStatusOK;
 }
 
@@ -627,7 +639,7 @@ MachineStatus MOCMachine::machineRunState(int state, const GSM::L3Message *l3msg
 				return MachineStatusOK;
 			}
 			const L3Setup *msg = dynamic_cast<typeof(msg)>(l3msg);
-			
+
 			MachineStatus stat = handleSetupMsg(msg);
 			if (stat != MachineStatusOK) { return stat; }
 			return machPush(new AssignTCHMachine(tran()), stateAssignTCHFSuccess);
@@ -695,7 +707,7 @@ MachineStatus MOCMachine::machineRunState(int state, const GSM::L3Message *l3msg
 		}
 
 		case L3CASE_CC(ConnectAcknowledge): {
-			if (getDialog()->isActive()) { 
+			if (getDialog()->isActive()) {
 				// We're rolling.  Fire up the in-call procedure.
 				setGSMState(CCState::Active);
 				return callMachStart(new InCallMachine(tran()));
@@ -793,7 +805,7 @@ MachineStatus AssignTCHMachine::machineRunState(int state, const GSM::L3Message 
 				// It is stopped when the MS has correctly seized the channels."
 				// If we receive a reassignment failure we will resend the assignment, which often works the second time.
 				// The TChReassignment timer controls how long we will keep re-trying.
-				// We used to use 3 (T3101-1) seconds, but I dont think this time is related to T3101 and 
+				// We used to use 3 (T3101-1) seconds, but I dont think this time is related to T3101 and
 				// I dont know what the ultimate limit is, maybe nothing.  I am going to up it just use T3101.
 				TChReassignment.future(T3101ms);
 				timerStart(T3101,T3101ms,stateAssignTimeout);	// This timer will truly abort.
@@ -1293,9 +1305,113 @@ MachineStatus InCallMachine::machineRunState(int state, const GSM::L3Message *l3
 	return MachineStatusOK;
 }
 
+MachineStatus TestCallMachine::machineRunState(int state, const GSM::L3Message *l3msg, const SIP::DialogMessage *sipmsg)
+{
+  PROCLOG2(DEBUG,state)<<LOGVAR(l3msg)<<LOGVAR(sipmsg)<<LOGVAR2("msid",tran()->subscriber());
+  switch (state){
+
+    case stateStart: {
+    }
+    default:
+      testCallStart(tran());
+      return MachineStatusOK;
+  }
+}
+
+void TestCallMachine::testCallStart(TranEntry *tran)
+{
+  assert(channel());
+  // Mark the call as active.
+  setGSMState(CCState::Active);
+
+  UDPSocket controlSocket(gConfig.getNum("TestCall.Port"));
+  UDPSocket maintenanceSocket(gConfig.getNum("Maintenance.Port"));
+
+  //FIX
+  std::cout << "Done! UDP listening. Send STOP to break the loop.\n";
+
+  char rBuf[MAX_UDP_LENGTH] = "STARTED";
+  // rBuf[6] = 'D';
+
+  maintenanceSocket.write(rBuf);
+
+  char iBuf[MAX_UDP_LENGTH] = {0};
+
+  while (channel()->chanRunning()) {
+    // Get the outgoing message from the test call port.
+    iBuf[MAX_UDP_LENGTH] = {0};
+    int msgLen = controlSocket.read(iBuf);
+
+    string iBufString(iBuf);
+    if(iBufString.find("STOP") != std::string::npos){
+      std::cout << "User abort." << std::endl;
+      break;
+    }
+
+    if(iBufString.find("RESTART") != std::string::npos){
+      break;
+    }
+    // Send it to the handset.
+    GSM::L3Frame query(iBuf, msgLen, SAPI0);
+    LOG(ALERT) << " Sending L3Frame: " << LOGVAR(query) << "\n" << std::endl;
+
+    channel()->l3sendf(query);
+
+    // Wait for a response.
+    GSM::L3Frame *resp = channel()->l2recv(1000); //should it be labeled and configurable instead of magic?
+    if (!resp) {
+      LOG(ALERT) << "Timeout ; No response";
+			iBuf[0] = 'R';
+			iBuf[1] = 'E';
+			iBuf[2] = 'S';
+			iBuf[3] = 'T';
+			iBuf[4] = 'A';
+			iBuf[5] = 'R';
+      iBuf[6] = 'T';
+      break;
+    }
+
+    std::cout << "Received from handset: " << LOGVAR(resp) << std::endl;
+    // Send response on the port.
+    unsigned char oBuf[resp->size()];
+    resp->pack(oBuf);
+    controlSocket.writeBack((char*)oBuf);
+    // Delete and close the loop.
+    delete resp;
+  }
+
+  controlSocket.close();
+  maintenanceSocket.close();
+  channel()->l3sendm(L3ChannelRelease());
+  setGSMState(CCState::ReleaseRequest);
+
+  string iBufString(iBuf);
+  if(iBufString.find("RESTART") != std::string::npos){
+    Control::FullMobileId msid(tran->subscriberIMSI());
+    Control::TranEntry *tran = Control::TranEntry::newMTC(
+      NULL,
+      msid,
+      GSM::L3CMServiceType::TestCall,
+      "0");
+
+    Control::gMMLayer.mmAddMT(tran);
+    std::cout << "\n Starting UDP... please wait a few seconds" << endl;
+  }
+  else{
+    tran -> handleMachineStatus(MachineStatus::MachineCodeQuitTran);
+    std::cout << "Stopped UDP loop.\n";
+  }
+
+}
+
 void initMTC(TranEntry *tran)
 {
 	tran->teSetProcedure(new MTCMachine(tran));
+}
+
+void initTestCall(TranEntry *tran)
+{
+   tran->teSetProcedure(new TestCallMachine(tran));
 }
 
 

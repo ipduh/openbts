@@ -1,4 +1,4 @@
-/* 
+/*
 * Copyright 2013, 2014 Range Networks, Inc.
 *
 * This software is distributed under multiple licenses;
@@ -118,13 +118,32 @@ bool MMUser::mmuServiceMTQueues()	// arg redundant with mmuContext->channel.
 			return true;
 		}
 	}
+	if (mmuContext->mmGetTran(MMContext::TE_TCall).isNULL()) {
+    if (mmuTESTCALL.size()) {
+      TranEntry *tran = mmuTESTCALL.pop_frontr();
+
+      // Tie the transaction to this channel.
+      mmuContext->mmConnectTran(MMContext::TE_TCall,tran);
+      // Unlock and run Testcall function
+      switch (tran->servicetype()) {
+      default:
+        initTestCall(tran);
+        break;
+      }
+
+      gMMLock.unlock();
+      tran->lockAndStart();
+      return true;
+    }
+  }
+
 	return false;
 }
 
 bool MMUser::mmuIsEmpty()
 {
 	ScopedLock lock(mmuLock,__FILE__,__LINE__);
-	return mmuMTCq.size() + mmuMTSMSq.size() == 0;
+	return mmuMTCq.size() + mmuMTSMSq.size()  + mmuTESTCALL.size() == 0;
 }
 
 bool MMContext::mmIsEmpty()
@@ -234,6 +253,9 @@ GSM::ChannelType MMUser::mmuGetInitialChanType() const
 			return GSM::SDCCHType;
 		}
 	}
+  if (mmuTESTCALL.size()) {
+		return GSM::SDCCHType; //needed?
+  }
 	devassert(mmuMTSMSq.size());
 	return GSM::SDCCHType;
 }
@@ -483,7 +505,7 @@ RefCntPointer<TranEntry> MMContext::findTran(const L3Frame *frame, const L3Messa
 			// TODO: This is a hack.  We should split the Procedures into MM and CS parts, and
 			// run the MM procedure first to identify the channel, then send a message to the CS procedure to start it.
 			//return mmcTE[TE_MM] ? mmcTE[TE_MM] : mmcTE[TE_CS1] ? mmcTE[TE_CS1] : mmcTE[TE_MOSMS1] ? mmcTE[TE_MOSMS1] : mmcTE[TE_MTSMS];
-			for (unsigned txi = TE_MM; txi < TE_num; txi++) {			
+			for (unsigned txi = TE_MM; txi < TE_num; txi++) {
 				if (TranEntry *te = mmcTE[txi].self()) { return te; }
 			}
 			break;
@@ -641,6 +663,10 @@ void MMContext::mmcPageReceived() const
 	if (! tran2.isNULL()) {
 		LOG(ERR) <<mmcChan <<" received page response while MS had active MT-SMS:"<<tran2.self();
 	}
+	RefCntPointer<TranEntry> tran3 = mmGetTran(MMContext::TE_TCall);
+	if (! tran3.isNULL()) {
+			LOG(ERR) <<mmcChan <<" received page response while MS had active MT-SMS:"<<tran3.self();
+	}
 
 	// We dont need to do anything else.  The service loop will notice and start new transactions.
 }
@@ -715,6 +741,9 @@ void MMUser::mmuAddMT(TranEntry *tran)
 		break;
 	case L3CMServiceType::MobileTerminatedShortMessage:
 		mmuMTSMSq.push_back(tran);
+		break;
+	case L3CMServiceType::TestCall:
+		mmuTESTCALL.push_back(tran);
 		break;
 	default:
 		assert(0);
@@ -805,6 +834,7 @@ void MMContext::mmcText(std::ostream&os) const
 	if (mmcTE[TE_MOSMS2] != NULL) { os <<LOGVAR2("MO-SMS2",*mmcTE[TE_MOSMS2]); }
 	if (mmcTE[TE_MTSMS] != NULL) { os <<LOGVAR2("MT-SMS",*mmcTE[TE_MTSMS]); }
 	if (mmcTE[TE_SS] != NULL) { os <<LOGVAR2("SS",*mmcTE[TE_SS]); }
+	if (mmcTE[TE_TCall] != NULL) { os <<LOGVAR2("TCall",*mmcTE[TE_TCall]); }
 	os << ")";
 }
 
@@ -874,6 +904,9 @@ void MMContext::mmConnectTran(TranEntry *tran)
 			break;
 		case L3CMServiceType::LocationUpdateRequest:
 			txi = TE_MM;
+			break;
+		case L3CMServiceType::TestCall:
+			txi = TE_TCall;
 			break;
 
 		case L3CMServiceType::SupplementaryService:
@@ -1204,6 +1237,8 @@ MMUser *MMLayer::mmFindByMobileId(L3MobileIdentity&mid)
 // When called from the paging thread loop this function is responsible for noticing expired MMUsers and deleting them.
 void MMLayer::mmGetPages(NewPagingList_t &pages)
 {
+	LOG(DEBUG) <<LOGVAR(MMUsers.size());
+	// LOG(ALERT) << "mmGetPages start";
 
 	assert(pages.size() == 0);	// Caller passes us a new list each time.
 
@@ -1232,7 +1267,7 @@ void MMLayer::mmGetPages(NewPagingList_t &pages)
 				mmu->mmuFree(NULL,TermCause::Local(L3Cause::No_Paging_Response));
 				continue;
 			}
-			// TODO: We could add a check for a "provisional IMSI" 
+			// TODO: We could add a check for a "provisional IMSI"
 
 			NewPagingEntry tmp(mmu->mmuGetInitialChanType(), mmu->mmuImsi);
 			pages.push_back(tmp);

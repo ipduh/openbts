@@ -54,6 +54,7 @@ ostream& GSM::operator<<(ostream& os, CMServiceTypeCode code)
 		case L3CMServiceType::MobileTerminatedShortMessage: os << "MTSMS"; return os;
 		case L3CMServiceType::LocationUpdateRequest: os << "LUR"; return os;
 		case L3CMServiceType::HandoverCall: os << "Handover"; return os;
+		case L3CMServiceType::TestCall: os << "TestCall"; return os;
 		case L3CMServiceType::UndefinedType: break;
 		//default: os << "?" << (int)code << "?";
 	}
@@ -78,8 +79,8 @@ void L3RejectCauseIE::parseV(const L3Frame& src, size_t &rp)
 }
 
 void L3RejectCauseIE::text(ostream& os) const
-{	
-	os <<"0x"<< hex << mRejectCause << dec;	
+{
+	os <<"0x"<< hex << mRejectCause << dec;
 }
 
 
@@ -188,8 +189,8 @@ void L3TimeZoneAndTime::writeV(L3Frame& dest, size_t& wp) const
 	           << " hour=" << fields.tm_hour << " min=" << fields.tm_min << " sec=" << fields.tm_sec
 	           << " zone=" << (zoneSign?"-":"+") << zone;
 }
-	
-	
+
+
 void L3TimeZoneAndTime::parseV(const L3Frame& src, size_t& rp)
 {
 	// See GSM 03.40 9.2.3.11.

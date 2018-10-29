@@ -86,7 +86,8 @@ L3LogicalChannel *L3LogicalChannel::getSACCHL3() {
 
 void L3LogicalChannel::l3sendm(const GSM::L3Message& msg, const GSM::Primitive& prim/*=GSM::DATA*/, SAPI_t SAPI/*=0*/)
 {
-	WATCHINFO("l3sendm"<<LOGVAR(prim)<<LOGVAR(SAPI)<<LOGVARP(msg)<<" "<<this);	// 'this' is the descriptive string of the channel.
+	LOG(DEBUG) <<"l3sendm:" <<LOGVAR(prim)<<LOGVAR(SAPI)<<LOGVARP(msg);
+	WATCHINFO("l3sendm"<<LOGVAR(prim)<<LOGVAR(SAPI)<<LOGVARP(msg)<<" "<<this<<"(channel)");	// 'this' is the descriptive string of the channel.
 	l2sendm(msg,prim,SAPI);
 }
 
