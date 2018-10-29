@@ -353,7 +353,7 @@ static CLIStatus cbscmd(int argc, char** argv, ostream& os)
 	bool verbose = !!options.count("-l");
 	string errMsg;
 
-	
+
 	// Do something.
 	if (subcmd == "clear") {
 		// clear (delete) all messages.
@@ -420,9 +420,9 @@ int isIMSI(const char *imsi)
 {
 	if (!imsi)
 		return 0;
-	if (strlen(imsi) != 15)
+	if (strlen(imsi) < 14 || strlen(imsi) > 15)
 		return 0;
-	
+
 	for (unsigned i = 0; i < strlen(imsi); i++) {
 		if (!isdigit(imsi[i]))
 			return 0;
@@ -443,7 +443,7 @@ static CLIStatus sendsimple(int argc, char** argv, ostream& os)
 	const char *txtBuf = rest.c_str();
 
 	if (!isIMSI(IMSI)) {
-		os << "Invalid IMSI. Enter 15 digits only.  ";
+		os << "Invalid IMSI. Enter a 14 xor 15 digit IMSI. ";
 		return BAD_VALUE;
 	}
 
@@ -497,7 +497,7 @@ static CLIStatus sendsms(int argc, char** argv, ostream& os)
 	for (int i=3; i<argc; i++) rest = rest + argv[i] + " ";
 
 	if (!isIMSI(IMSI)) {
-		os << "Invalid IMSI. Enter 15 digits only.";
+		os << IMSI << " is an invalid IMSI. Valid IMSIs are 14 or 15 digit long.";
 		return BAD_VALUE;
 	}
 
@@ -511,6 +511,32 @@ static CLIStatus sendsms(int argc, char** argv, ostream& os)
 						string("text/plain"));	// messate content type
 	Control::gMMLayer.mmAddMT(tran);
 	os << "message submitted for delivery" << endl;
+	return SUCCESS;
+}
+
+static CLIStatus testcall(int argc, char **argv, ostream& os)
+{
+	if (argc!=2) return BAD_NUM_ARGS;
+
+	char *IMSI = argv[1];
+	if (!isIMSI(IMSI)) {
+		os << IMSI << " is not a valid IMSI" << endl;
+		return BAD_VALUE;
+	}
+
+	Control::FullMobileId msid(IMSI);
+	Control::TranEntry *tran = Control::TranEntry::newMTC(
+		NULL,
+		msid,
+		GSM::L3CMServiceType::TestCall,
+		"0");
+
+	Control::gMMLayer.mmAddMT(tran);
+
+    //FIX
+	os << "setting up " <<  "testcal UDP ports for " << IMSI << endl;
+	os << "Maintenance port: " << gConfig.getStr("Maintenance.Port")  << endl;
+	os << "TestCall port   : " << gConfig.getStr("TestCall.Port")  << endl;
 	return SUCCESS;
 }
 
@@ -1275,7 +1301,7 @@ CLIStatus printChansV4(std::ostream& os,bool showAll, int verbosity, bool tabSep
 {
 	// The "active" field needs to be a big enough for the longest lapdm states here:
 	//                                                 LinkEstablished
-	//                                                 ContentionResolve  
+	//                                                 ContentionResolve
 	//                                                 AwaitingEstablish
 	// The spacing in these headers no longer matters.
 	string header1, header2;
@@ -1484,7 +1510,7 @@ static CLIStatus rxgain(int argc, char** argv, ostream& os)
 
         int newGain = gTRX.ARFCN(0)->setRxGain(atoi(argv[1]));
         os << "new RX gain is " << newGain << " dB" << endl;
-  
+
         gConfig.set("GSM.Radio.RxGain",newGain);
 
         return SUCCESS;
@@ -1729,7 +1755,7 @@ void Parser::addCommands()
 	addCommand("devconfig", devconfig, "[] OR [patt] OR [key val(s)] -- print the current configuration, print configuration values matching a pattern, or set/change a configuration value.");
 	addCommand("regperiod", regperiod, "[GSM] [SIP] -- get/set the registration period (GSM T3212), in MINUTES.");
 	addCommand("alarms", alarms, "-- show latest alarms.");
-	addCommand("version", version,"-- print the version string.");
+	addCommand("version", version, "-- print the version string.");
 	addCommand("page", page, "print the paging table.");
 	addCommand("chans", chans, chansHelp);
         addCommand("rxgain", rxgain, "[newRxgain] -- get/set the RX gain in dB.");
@@ -1739,18 +1765,20 @@ void Parser::addCommands()
 	addCommand("rmconfig", rmconfig, "key -- set a configuration value back to its default or remove a custom key/value pair.");
 	addCommand("unconfig", unconfig, "key -- disable a configuration key by setting an empty value.");
 	addCommand("notices", notices, "-- show startup copyright and legal notices.");
-	addCommand("endcall", endcall,endcallHelp);
+	addCommand("endcall", endcall, endcallHelp);
 	addCommand("sysinfo", sysinfo, "-- print current system information messages.");
 	addCommand("neighbors", neighbors, neighborsHelp);
 	addCommand("gprs", GPRS::gprsCLI,"GPRS mode sub-command.  Type: 'gprs help' for more.");
 	addCommand("sgsn", SGSN::sgsnCLI,"SGSN mode sub-command.  Type: 'sgsn help' for more.");
 	addCommand("crashme", crashme, "force crash of OpenBTS for testing purposes.");
-	addCommand("stats", stats,"[patt] OR clear -- print all, or selected, performance counters, OR clear all counters.");
-	addCommand("handover", handover,handoverHelp);
+	addCommand("stats", stats, "[patt] OR clear -- print all, or selected, performance counters, OR clear all counters.");
+	addCommand("handover", handover, handoverHelp);
 	addCommand("memstat", memStat, "-- internal testing command: print memory use stats.");
 	addCommand("cbs", cbscmd, cbsHelp);
 
 	addCommand("power", powerCommand, powerHelp);
+	addCommand("testcall", testcall, " IMSI -- enable raw control signaling with a Mobile Station");
+
 }
 
 
