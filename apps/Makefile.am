@@ -21,7 +21,7 @@
 
 include $(top_srcdir)/Makefile.common
 
-DESTDIR := 
+DESTDIR :=
 
 # AM_CPPFLAGS = $(STD_DEFINES_AND_INCLUDES)
 # AM_CXXFLAGS = -Wall -ldl -pthread
@@ -50,7 +50,7 @@ ourlibs = \
 	$(ORTP_LIBS)
 
 OpenBTS_SOURCES = OpenBTS.cpp GetConfigurationKeys.cpp
-OpenBTS_LDADD = $(ourlibs) -ldl -lortp -la53 -lcoredumper 
+OpenBTS_LDADD = $(ourlibs) -ldl -lortp -la53 -lcoredumper
 OpenBTS_LDFLAGS = $(GPROF_OPTIONS) -rdynamic
 
 clilibs= \
@@ -75,25 +75,35 @@ EXTRA_DIST = \
 	generateConfigTable.sh \
 	exportConfigTable.sh \
 	importConfigTable.sh \
-	generateTeX.sh
+	generateTeX.sh \
+	asterisk.service \
+	openbts.service \
+	sipauthserve.service \
+	smqueue.service
+
 
 install: OpenBTS OpenBTSCLI
 	mkdir -p "$(DESTDIR)/OpenBTS/"
 	install OpenBTS "$(DESTDIR)/OpenBTS/"
 	install OpenBTSCLI "$(DESTDIR)/OpenBTS/"
 	install OpenBTSDo "$(DESTDIR)/OpenBTS/"
+	install openbtsconfig "$(DESTDIR)/OpenBTS/"
+	install CLI "$(DESTDIR)/OpenBTS/"
 	chmod +x "$(DESTDIR)/OpenBTS/OpenBTSDo"
 	install .gdbinit "$(DESTDIR)/OpenBTS/"
 	mkdir -p "$(DESTDIR)/etc/init/"
 	install openbts.conf "$(DESTDIR)/etc/init/"
 	mkdir -p "$(DESTDIR)/etc/OpenBTS/"
+	install openbtsconfig "$(DESTDIR)/etc/OpenBTS/"
 	install iptables.rules "$(DESTDIR)/etc/OpenBTS/"
 	install OpenBTS.example.sql "$(DESTDIR)/etc/OpenBTS/"
 	mkdir -p "$(DESTDIR)/etc/rsyslog.d/"
 	mkdir -p "$(DESTDIR)/etc/logrotate.d/"
 	install rsyslogd.OpenBTS.conf "$(DESTDIR)/etc/rsyslog.d/OpenBTS.conf"
 	install logrotated.OpenBTS "$(DESTDIR)/etc/logrotate.d/OpenBTS"
-	mkdir -p "$(DESTDIR)/home/openbts/"
-	install CLI "$(DESTDIR)/home/openbts/"
-	install openbtsconfig "$(DESTDIR)/home/openbts/"
+	mkdir -p "$(DESTDIR)/etc/systemd/system/"
+	install asterisk.service "$(DESTDIR)/etc/systemd/system/asterisk.service"
+	install openbts.service "$(DESTDIR)/etc/systemd/system/openbts.service"
+	install sipauthserve.service "$(DESTDIR)/etc/systemd/system/sipauthserve.service"
+	install smqueue.service "$(DESTDIR)/etc/systemd/system/smqueue.service"
 
